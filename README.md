@@ -6,4 +6,6 @@ The algorithm tries to walk through the most promising states under the time all
 Note that these codes have been extracted from a large project, where they were tailored to perform a specific task.
 Further generalization would certainly be necessary.
 
-Further readings can be found in the downloads section.
+Further readings can be found in the docs.
+
+Minimum working example: mve.py
