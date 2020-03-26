@@ -46,6 +46,7 @@ options = {
 		},
 	'max_rounds': 100,
 	'init_t': 0.5,
+	'query_pk': 1, #needed an id for bokeh html template generation
 	}
 
 iter_ = SAMCTreeSearch(**options)
