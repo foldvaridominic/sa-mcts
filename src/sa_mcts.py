@@ -370,7 +370,7 @@ class SAMCTreeSearch:
             title='Price',
             start=min_price, end=max_price,
             value=(min_price, max_price),
-            step=100)
+            step=(max_price-min_price) / 50.0)
         slider_price.js_on_change('value', callback_price)
 
         callback_round = CustomJS(
