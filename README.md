@@ -17,7 +17,7 @@ Minimum working example
 -----------------------
 ```bash
 pip install -r requirements.txt
-python mwe.py
+python ./src/mwe.py
 ```
 
 Visualization
