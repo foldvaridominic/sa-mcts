@@ -12,4 +12,5 @@ Further readings can be found in the docs.
 Minimum working example: mwe.py
 
 Visualization with Bokeh:
-![](images/bokeh.png)
+
+<img src="images/bokeh.png" width=300 height=350 >
