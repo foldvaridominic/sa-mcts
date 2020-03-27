@@ -10,3 +10,6 @@ Further generalization would certainly be necessary.
 Further readings can be found in the docs.
 
 Minimum working example: mwe.py
+
+Visualization with Bokeh:
+![](images/bokeh.png)
