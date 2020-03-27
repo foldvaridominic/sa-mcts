@@ -13,4 +13,4 @@ Minimum working example: mwe.py
 
 Visualization with Bokeh:
 
-<img src="images/bokeh.png" width=300 height=350 >
+<img src="images/bokeh.png" width=500 height=550 >
