@@ -65,7 +65,7 @@ class SAMCTreeSearch:
         self.graph = G
         self._set_new_branch(allowed_dict.keys())
         self.inactive_branch_levels = set()
-        self.query_pk = kwargs.get("iquote_query")
+        self.query_pk = kwargs.get("query_pk")
 
     def _set_new_branch(self, nodes):
         self.max_level += 1

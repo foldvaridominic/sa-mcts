@@ -25,7 +25,7 @@ class Identifier1:
 
     def __str__(self):
         return str(self.pk)
-		
+
 class Identifier2:
 
     def __init__(self, primary_key):
@@ -40,17 +40,19 @@ item3 = (Identifier1(3), Identifier2(3))
 
 options = {
     'allowed_dict': {
-	    item1: [item2, item3],
-		item2: [item1,],
-		item3: [item1,],
-		},
-	'max_rounds': 100,
-	'init_t': 0.5,
-	'query_pk': 1, #needed an id for bokeh html template generation
-	}
+        item1: [item2, item3],
+        item2: [item1,],
+        item3: [item1,],
+        },
+    'max_rounds': 100,
+    'init_t': 0.5,
+    'query_pk': 1, #needed an id for bokeh html template generation
+    }
 
 iter_ = SAMCTreeSearch(**options)
-for node in iter_:
-	# call some external functions or methods to get the fitness of this node
+node_fitness_values = range(1,10)
+benchmark_fitness = 1
+for idx, node in enumerate(iter_):
+    # call some external functions or methods to get the fitness of this node
     # update the node and its ancestors and descendants
-    node.rolling_update(node_fitness, benchmark_fitness)		
+    node.rolling_update(node_fitness_values[idx], benchmark_fitness)
