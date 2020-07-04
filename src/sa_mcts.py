@@ -33,6 +33,9 @@ def flatten(iterable):
     return list(chain.from_iterable(iterable))
 
 
+NEW_BRANCH_NODE_LIMIT = 20
+
+
 class SAMCTreeSearch:
     """
     Apply Monte-Carlo tree search on item combinations
@@ -50,20 +53,19 @@ class SAMCTreeSearch:
         """
         :allowed_dict: dict of of possible item combinations
         :max_rounds: maximum number of rounds allowed for running
-        :init_t: initial temperature for the cooling schedule
+        :init_t_coeff: a coefficient for initial temperature calculation for the cooling schedule
         """
-        allowed_dict = kwargs.get("allowed_dict")
-        max_rounds = kwargs.get("max_rounds")
-        self.init_t = kwargs.get("init_t")
-        self.allowed_dict = allowed_dict
-        self.max_rounds = max_rounds
+        self.allowed_dict = kwargs.get("allowed_dict")
+        self.max_rounds = kwargs.get("max_rounds")
+        self.init_t_coeff = kwargs.get("init_t_coeff")
+        self.init_t = 0
         self.active_branches = []
         self.max_level = 0
         self.rounds = 0
         self.core_nodes = None
         G = nx.DiGraph()
         self.graph = G
-        self._set_new_branch(allowed_dict.keys())
+        self._set_new_branch(self.allowed_dict.keys())
         self.inactive_branch_levels = set()
         self.query_pk = kwargs.get("query_pk")
 
@@ -72,7 +74,8 @@ class SAMCTreeSearch:
         try:
             parent = self.active_branches[-1]
             if parent.level == 1:
-                self.init_t = self.init_t or parent.get_largest_value_diff()
+                init_t = parent.get_largest_value_diff()
+                self.init_t = init_t * self.init_t_coeff
         except IndexError:
             parent = None
         branch = Branch(nodes, parent, self.core_nodes,
@@ -114,13 +117,16 @@ class SAMCTreeSearch:
         chosen_node = None
         selection = []
         for branch in self.active_branches:
-            self._set_ucb_values(branch)
             logger.debug("Selecting new node %s at branch %s",
                 self.rounds, branch)
+            self._set_ucb_values(branch)
             sorted_nodes = sorted(branch.active_nodes, reverse=True,
                 key=lambda n: (n.ucb_value, str(n)))
             if chosen_node:
-                chosen_node = [n for n in sorted_nodes if n in chosen_node.children][0]
+                # solves branch jumps
+                pool = chosen_node.get_relevant_descendants(
+                    max_level=branch.level-1)
+                chosen_node = [n for n in sorted_nodes if n in pool][0]
             else:
                 chosen_node = sorted_nodes[0]
             logger.debug("Node selected: %s", chosen_node)
@@ -172,7 +178,7 @@ class SAMCTreeSearch:
 
     def get_info_str(self):
         return "{} rounds; T0 = {}".format(
-            self.rounds, self.init_t)
+            self.rounds, round(self.init_t, 4))
 
     def visualize_final(self):
         # TODO
@@ -182,6 +188,8 @@ class SAMCTreeSearch:
 
         # Get nodes and properties
         nodes = list(self.graph)
+        if not nodes:
+            return
         sorted_nodes = sorted(
             [n for n in nodes if n.calc_round
             and n.price < float("inf")],
@@ -203,7 +211,7 @@ class SAMCTreeSearch:
              n.get_parent_calc_rounds(),
              n.branch.level,
             ) for n in nodes])
-        max_price = math.ceil(max(price))
+        max_price = math.ceil(max(price)) + 1.0 # force unequal slider ends
         min_price = math.floor(min(price))
 
         # Generate positions
@@ -383,8 +391,8 @@ class SAMCTreeSearch:
             code=code)
         slider_round = RangeSlider(
             title='Round',
-            start=min(round_), end=max(round_),
-            value=(min(round_), max(round_)),
+            start=min(round_), end=max(round_)+1,
+            value=(min(round_), max(round_)+1),
             step=1)
         slider_round.js_on_change('value', callback_round)
 
@@ -599,7 +607,10 @@ class Branch:
 
     @property
     def active_nodes_for_creating(self):
-        return [n for n in self.nodes if not n.inactive_soft]
+        ret = sorted(
+            [n for n in self.nodes if not n.inactive_soft],
+            key=lambda n: n.value, reverse=True)[:NEW_BRANCH_NODE_LIMIT]
+        return ret
 
     def _set_ucb_values(self, temperature):
         for node in self.nodes:
@@ -609,7 +620,7 @@ class Branch:
 
     def get_largest_value_diff(self):
         values = [n.value for n in self.nodes]
-        return round(max(values) - min(values), 1)
+        return max(values) - min(values)
 
 
 class Node:
@@ -701,7 +712,7 @@ class Node:
         # assuming the value is price
             self.price = value
             # set the whole corresponding tree part as inactive
-            if any(value > p.price +0.01 for p in self.parents):
+            if any((value > p.price + 1.0) and p.visited for p in self.parents):
                 self.halting_point = True
                 self._set_inactive_descendants()
             value = float(base_value) / float(value)
@@ -819,6 +830,14 @@ class Node:
         self.set_node_color("red")
         for child in self.children:
             child._set_inactive_descendants()
+
+    def get_relevant_descendants(self, max_level):
+        children = self.children
+        if self.branch.level == max_level:
+            return children
+        return flatten([
+            child.get_relevant_descendants(max_level)
+            for child in children])
 
     @staticmethod
     def get_bulk_parents(nodes):
