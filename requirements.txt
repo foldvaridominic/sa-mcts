@@ -1,4 +1,4 @@
 matplotlib==2.2.4
 networkx==2.2
-numpy==1.8.2
+numpy==1.22.0
 bokeh==1.4.0
